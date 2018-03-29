@@ -1,14 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
+    android:id="@+id/activity_main_root"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:background="@color/light_sage"
+    android:orientation="vertical"
+    >
 
-    <android.support.v4.view.ViewPager
-        android:id="@+id/activity_main_viewpager"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+    <ImageView
+        android:id="@+id/activity_main_image_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:src="@drawable/smiley_happy" />
 
-</LinearLayout>
+    <ImageView
+        android:id="@+id/activity_main_add_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:src="@drawable/ic_note_add_black"
+        android:layout_margin="15dp"
+        />
+
+
+    <ImageView
+        android:id="@+id/activity_main_history_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:src="@drawable/ic_history_black"
+        android:layout_margin="15dp"
+        />
+
+</RelativeLayout>
