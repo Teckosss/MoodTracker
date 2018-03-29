@@ -20,7 +20,7 @@ public class SuperHapPageFragment extends BaseFragment {
     // --------------
 
     @Override
-    protected BaseFragment newInstance() { return new DissapPageFragment(); }
+    protected BaseFragment newInstance() { return new SuperHapPageFragment(); }
 
     @Override
     protected int getFragmentLayout() { return R.layout.fragment_super_hap_page; }

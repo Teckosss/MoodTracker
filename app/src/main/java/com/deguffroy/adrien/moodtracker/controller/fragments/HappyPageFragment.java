@@ -20,7 +20,7 @@ public class HappyPageFragment extends BaseFragment {
     // --------------
 
     @Override
-    protected BaseFragment newInstance() { return new DissapPageFragment(); }
+    protected BaseFragment newInstance() { return new HappyPageFragment(); }
 
     @Override
     protected int getFragmentLayout() { return R.layout.fragment_happy_page; }

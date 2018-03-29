@@ -20,7 +20,7 @@ public class SadPageFragment extends BaseFragment {
     // --------------
 
     @Override
-    protected BaseFragment newInstance() { return new DissapPageFragment(); }
+    protected BaseFragment newInstance() { return new SadPageFragment(); }
 
     @Override
     protected int getFragmentLayout() { return R.layout.fragment_sad_page; }

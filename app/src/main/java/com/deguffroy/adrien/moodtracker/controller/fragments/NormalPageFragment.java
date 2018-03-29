@@ -20,7 +20,7 @@ public class NormalPageFragment extends BaseFragment {
     // --------------
 
     @Override
-    protected BaseFragment newInstance() { return new DissapPageFragment(); }
+    protected BaseFragment newInstance() { return new NormalPageFragment(); }
 
     @Override
     protected int getFragmentLayout() { return R.layout.fragment_normal_page; }
