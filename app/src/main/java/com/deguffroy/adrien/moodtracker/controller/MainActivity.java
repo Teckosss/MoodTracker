@@ -14,10 +14,11 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import com.deguffroy.adrien.moodtracker.R;
 import com.deguffroy.adrien.moodtracker.model.Mood;
-import com.google.common.reflect.TypeToken;
+import com.google.gson.reflect.TypeToken;
 import com.google.gson.Gson;
 
 import java.lang.reflect.Type;
@@ -71,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             builder.setMessage("Commentaire");
             final EditText edittext = new EditText(this);
             if (mPreferences.getString(PREF_KEY_MESSAGE,null) != null){
-                edittext.setText(mPreferences.getString(PREF_KEY_MESSAGE,null));
+                edittext.setText(mPreferences.getString(PREF_KEY_MESSAGE,""));
             }else{
                 edittext.setHint("Entrez votre commentaire");
                 edittext.requestFocus();
@@ -133,8 +134,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onPause(){
         super.onPause();
         mPreferences.edit().putInt(PREF_KEY_MOOD, mCurrentMood).apply();
-        DateFormat df = new SimpleDateFormat("yyyy.MM.dd");
-        String date = df.format(Calendar.getInstance().getTime());
 
         Gson gson = new Gson();
         String json = mPreferences.getString("Mood","");
@@ -142,23 +141,55 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMoods = gson.fromJson(json,type);
         if (mMoods == null) {
             mMoods = new ArrayList<>();
+            createAndSaveMood(mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,""));
         }else{
             int listSize = mMoods.size();
             for (int i = 0; i<listSize; i++){
-                //Log.i("Member name: ", mMoods.get(i)+"");
-                if (mMoods.get(i).getDateMood().equals(date)){
-                    Log.i("Break", "Break de la boucle la date d'aujourdhui à été trouvée !");
+                //Log.i("Index : " + i, mMoods.get(i)+"");
+                if (mMoods.get(i).getDateMood().equals(todayDate())){
+                    //Log.i("Break", "Break de la boucle la date d'aujourdhui à été trouvée !");
+                    /*if (listSize > 6){ // FOR TESTING ONLY
+                        Toast.makeText(this, "Il y a 7 éléments !", Toast.LENGTH_SHORT).show();
+                        mMoods.remove(0);
+                        createAndSaveMood(mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,""));
+                    }else{
+                        createAndSaveMood(mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,""));
+                    }*/
+                    modifyAndSaveMood(i,mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,null));
                     break;
-                }else{
-                    Log.i("NoBreak", "La date n'a pas été trouvée");
-                    Mood mood = new Mood(mCurrentMood,date,mPreferences.getString(PREF_KEY_MESSAGE,null));
-                    mMoods.add(mood);
-                    String jsonMood = gson.toJson(mMoods);
-                    mPreferences.edit().putString("Mood",jsonMood).apply();
+                }else if (i >= listSize){
+                    //Log.i("NoBreak", "La date n'a pas été trouvée");
+                    if (listSize > 6){
+                        Toast.makeText(this, "Il y a 7 éléments !", Toast.LENGTH_SHORT).show();
+                        mMoods.remove(0);
+                    }
+                    createAndSaveMood(mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,""));
+
                 }
 
             }
         }
+    }
+
+    private void createAndSaveMood(int moodToSave, String messageToSave){
+        Gson gson = new Gson();
+            Mood mood = new Mood(moodToSave,todayDate(),messageToSave);
+            mMoods.add(mood);
+            String jsonMood = gson.toJson(mMoods);
+            mPreferences.edit().putString("Mood",jsonMood).apply();
+    }
+
+    private void modifyAndSaveMood(int indexMood, int moodToSave, String messageToSave){
+        Gson gson = new Gson();
+        mMoods.get(indexMood).setMood(moodToSave);
+        mMoods.get(indexMood).setMessageMood(messageToSave);
+        String jsonMood = gson.toJson(mMoods);
+        mPreferences.edit().putString("Mood",jsonMood).apply();
+    }
+
+    private String todayDate(){
+        DateFormat df = new SimpleDateFormat("yyyy.MM.dd");
+        return df.format(Calendar.getInstance().getTime());
     }
 
     // This touch listener passes everything on to the gesture detector.

@@ -16,7 +16,6 @@ public class Mood {
         mDateMood = dateMood;
         mMessageMood = messageMood;
     }
-
     public int getMood() {
         return mMood;
     }

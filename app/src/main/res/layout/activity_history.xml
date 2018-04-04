@@ -7,12 +7,16 @@
     android:layout_height="match_parent"
     tools:context="com.deguffroy.adrien.moodtracker.controller.HistoryActivity"
     android:orientation="vertical"
-    android:background="@color/colorBackground">
+    android:background="@color/colorBackground"
+    android:weightSum="1"
+    >
 
     <ListView
         android:id="@+id/activity_history_list_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:divider="@null"
+        android:dividerHeight="0dp"
         >
 
     </ListView>

@@ -2,12 +2,19 @@ package com.deguffroy.adrien.moodtracker.controller;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Point;
+import android.os.Build;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.graphics.Color;
@@ -23,10 +30,10 @@ import java.util.List;
 
 public class MoodAdapter extends ArrayAdapter<Mood> {
 
-    private Activity activity;
 
-    public MoodAdapter(Context context, List<Mood> score) {
-        super(context, 0, score);
+
+    public MoodAdapter(Context context, List<Mood> mood) {
+        super(context, 0, mood);
     }
 
     public View getView(int position, View convertView, ViewGroup parent) {
@@ -40,14 +47,16 @@ public class MoodAdapter extends ArrayAdapter<Mood> {
             viewHolder = new HOFViewHolder();
             viewHolder.layout =  convertView.findViewById(R.id.layout);
             viewHolder.name =  convertView.findViewById(R.id.name);
-            viewHolder.date =  convertView.findViewById(R.id.date);
             viewHolder.image =  convertView.findViewById(R.id.image);
+            viewHolder.listview =  convertView.findViewById(R.id.activity_history_list_view);
             convertView.setTag(viewHolder);
         }
 
         Mood users = getItem(position);
         int mood = users.getMood();
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        int totalHeight = parent.getHeight();
+        viewHolder.layout.setMinimumHeight(totalHeight / getCount());
         switch (mood){
             case 0:
                 params.weight = 80;
@@ -76,7 +85,6 @@ public class MoodAdapter extends ArrayAdapter<Mood> {
                 break;
         }
         viewHolder.name.setText(users.getMood()+"");
-        viewHolder.date.setText(users.getDateMood());
         if (!(users.getMessageMood().equals(""))){
             viewHolder.image.setImageResource(R.drawable.ic_comment_black_48px);
         }else{
@@ -89,8 +97,8 @@ public class MoodAdapter extends ArrayAdapter<Mood> {
 
     private class HOFViewHolder{
         public TextView name;
-        public TextView date;
         public ImageView image;
+        public ListView listview;
         public LinearLayout layout;
     }
 }
