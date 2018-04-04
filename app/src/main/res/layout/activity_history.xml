@@ -5,6 +5,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.deguffroy.adrien.moodtracker.controller.HistoryActivity">
+    tools:context="com.deguffroy.adrien.moodtracker.controller.HistoryActivity"
+    android:orientation="vertical"
+    android:background="@color/colorBackground">
+
+    <ListView
+        android:id="@+id/activity_history_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+
+    </ListView>
 
 </LinearLayout>

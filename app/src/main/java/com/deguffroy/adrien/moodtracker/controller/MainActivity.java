@@ -16,6 +16,15 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import com.deguffroy.adrien.moodtracker.R;
+import com.deguffroy.adrien.moodtracker.model.Mood;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
+
+import java.lang.reflect.Type;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -28,11 +37,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ImageView mHistBtn;
 
     private int mCurrentMood = 3;
+    private ArrayList<Mood> mMoods;
 
     private static final String PREFS = "PREFS";
     private SharedPreferences mPreferences;
 
     public static final String PREF_KEY_MOOD = "PREF_KEY_MOOD";
+    public static final String PREF_KEY_MESSAGE = "PREF_KEY_MESSAGE";
 
     private GestureDetector mDetector;
 
@@ -44,18 +55,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         this.findViews();
         this.retrievePreferences();
+        this.configureButton();
+        this.configureGesture();
 
-        mAddBtn.setOnClickListener(this);
-        mHistBtn.setOnClickListener(this);
-        mAddBtn.setTag(0);
-        mHistBtn.setTag(1);
-
-        // get the gesture detector
-        mDetector = new GestureDetector(this, new MyGestureListener());
-
-        // Add a touch listener to the view
-        // The touch listener passes all its events on to the gesture detector
-        mRelativeLayout.setOnTouchListener(touchListener);
     }
 
     @Override
@@ -68,13 +70,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setMessage("Commentaire");
             final EditText edittext = new EditText(this);
-            edittext.setHint("Entrez votre commentaire");
-            edittext.requestFocus();
+            if (mPreferences.getString(PREF_KEY_MESSAGE,null) != null){
+                edittext.setText(mPreferences.getString(PREF_KEY_MESSAGE,null));
+            }else{
+                edittext.setHint("Entrez votre commentaire");
+                edittext.requestFocus();
+            }
             builder.setView(edittext)
                     .setPositiveButton("Valider", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             // Do something when click 'Valider'
+                                mPreferences.edit().putString(PREF_KEY_MESSAGE,edittext.getText().toString()).apply();
                         }
                     })
                     .setNegativeButton("Annuler", new DialogInterface.OnClickListener() {
@@ -106,11 +113,52 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         changeMood(mCurrentMood);
     }
 
+    private void configureButton(){
+        mAddBtn.setOnClickListener(this);
+        mHistBtn.setOnClickListener(this);
+        mAddBtn.setTag(0);
+        mHistBtn.setTag(1);
+    }
+
+    private void configureGesture(){
+        // get the gesture detector
+        mDetector = new GestureDetector(this, new MyGestureListener());
+
+        // Add a touch listener to the view
+        // The touch listener passes all its events on to the gesture detector
+        mRelativeLayout.setOnTouchListener(touchListener);
+    }
+
     @Override
     protected void onPause(){
         super.onPause();
-
         mPreferences.edit().putInt(PREF_KEY_MOOD, mCurrentMood).apply();
+        DateFormat df = new SimpleDateFormat("yyyy.MM.dd");
+        String date = df.format(Calendar.getInstance().getTime());
+
+        Gson gson = new Gson();
+        String json = mPreferences.getString("Mood","");
+        Type type = new TypeToken<ArrayList<Mood>>(){}.getType();
+        mMoods = gson.fromJson(json,type);
+        if (mMoods == null) {
+            mMoods = new ArrayList<>();
+        }else{
+            int listSize = mMoods.size();
+            for (int i = 0; i<listSize; i++){
+                //Log.i("Member name: ", mMoods.get(i)+"");
+                if (mMoods.get(i).getDateMood().equals(date)){
+                    Log.i("Break", "Break de la boucle la date d'aujourdhui à été trouvée !");
+                    break;
+                }else{
+                    Log.i("NoBreak", "La date n'a pas été trouvée");
+                    Mood mood = new Mood(mCurrentMood,date,mPreferences.getString(PREF_KEY_MESSAGE,null));
+                    mMoods.add(mood);
+                    String jsonMood = gson.toJson(mMoods);
+                    mPreferences.edit().putString("Mood",jsonMood).apply();
+                }
+
+            }
+        }
     }
 
     // This touch listener passes everything on to the gesture detector.
@@ -144,29 +192,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                float velocityX, float velocityY) {
             if (e1.getY() < e2.getY()) {
                 changeMood(--mCurrentMood);
-                //Log.d("TAG", "MoodValue : " + mCurrentMood);
             }
 
             if (e1.getY() > e2.getY()) {
                 changeMood(++mCurrentMood);
-                //Log.d("TAG", "MoodValue : " + mCurrentMood);
             }
             return true;
         }
     }
 
-    private void changeMood(int CurrentMood){
-        Log.d("TAG", "MoodValue Entering method : " + mCurrentMood);
-        if (CurrentMood < 0){
-            CurrentMood = 0;
-            mCurrentMood = 0;
+    private void changeMood(int currentMood){
+        //Log.d("TAG", "MoodValue Entering method : " + mCurrentMood);
+        if (currentMood < 0){
+            currentMood = 0;
+            mCurrentMood = currentMood;
         }
-        else if (CurrentMood > 4){
-            CurrentMood = 4;
-            mCurrentMood = 4;
+        else if (currentMood > 4){
+            currentMood = 4;
+            mCurrentMood = currentMood;
         }
-        Log.d("TAG", "MoodValue After normalize : " + mCurrentMood);
-        switch(CurrentMood){
+        //Log.d("TAG", "MoodValue After normalize : " + mCurrentMood);
+        switch(currentMood){
 
             case 0 :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.faded_red));
