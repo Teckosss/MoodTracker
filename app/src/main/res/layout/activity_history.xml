@@ -8,17 +8,14 @@
     tools:context="com.deguffroy.adrien.moodtracker.controller.HistoryActivity"
     android:orientation="vertical"
     android:background="@color/colorBackground"
-    android:weightSum="1"
     >
 
-    <ListView
-        android:id="@+id/activity_history_list_view"
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/activity_history_recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:divider="@null"
-        android:dividerHeight="0dp"
+        android:layout_height="wrap_content"
         >
 
-    </ListView>
+    </android.support.v7.widget.RecyclerView>
 
 </LinearLayout>

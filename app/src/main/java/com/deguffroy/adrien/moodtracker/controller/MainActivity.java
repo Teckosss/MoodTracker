@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }else{
             int listSize = mMoods.size();
             for (int i = 0; i<listSize; i++){
-                //Log.i("Index : " + i, mMoods.get(i)+"");
+                //Log.i("Index : " + i + " / " + listSize, mMoods.get(i)+"");
                 if (mMoods.get(i).getDateMood().equals(todayDate())){
                     //Log.i("Break", "Break de la boucle la date d'aujourdhui à été trouvée !");
                     /*if (listSize > 6){ // FOR TESTING ONLY
@@ -157,14 +157,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }*/
                     modifyAndSaveMood(i,mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,null));
                     break;
-                }else if (i >= listSize){
+                }else if (i >= listSize - 1){
                     //Log.i("NoBreak", "La date n'a pas été trouvée");
                     if (listSize > 6){
                         Toast.makeText(this, "Il y a 7 éléments !", Toast.LENGTH_SHORT).show();
                         mMoods.remove(0);
                     }
                     createAndSaveMood(mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,""));
-
                 }
 
             }
