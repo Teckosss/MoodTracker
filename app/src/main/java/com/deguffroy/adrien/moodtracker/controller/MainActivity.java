@@ -1,6 +1,5 @@
 package com.deguffroy.adrien.moodtracker.controller;
 
-
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -32,13 +31,15 @@ import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private RelativeLayout mRelativeLayout;
-    private ImageView mMoodImage;
-    private ImageView mAddBtn;
-    private ImageView mHistBtn;
+    @BindView(R.id.activity_main_root) RelativeLayout mRelativeLayout;
+    @BindView(R.id.activity_main_image_view) ImageView mMoodImage;
+    @BindView(R.id.activity_main_add_btn) ImageView mAddBtn;
+    @BindView(R.id.activity_main_history_btn) ImageView mHistBtn;
 
     private int mCurrentMood = 3;
+    private String mCurrentMessage = "";
     private ArrayList<Mood> mMoods;
+    private ArrayList<Mood> mMoodsCurrent;
 
     private static final String PREFS = "PREFS";
     private SharedPreferences mPreferences;
@@ -53,25 +54,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
 
-        this.findViews();
         this.retrievePreferences();
         this.configureButton();
         this.configureGesture();
-
     }
 
+    // Manage click and does the corresponding action according to the tag
     @Override
     public void onClick(View v) {
         int button = (int) v.getTag();
 
-        if (button == 0){
-            // If Add comment button pressed
-
+        if (button == 0){  // If Add comment button pressed
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setMessage("Commentaire");
             final EditText edittext = new EditText(this);
-            if (mPreferences.getString(PREF_KEY_MESSAGE,null) != null){
+            if (!(mPreferences.getString(PREF_KEY_MESSAGE,"").equals(""))){
                 edittext.setText(mPreferences.getString(PREF_KEY_MESSAGE,""));
             }else{
                 edittext.setHint("Entrez votre commentaire");
@@ -81,39 +80,58 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     .setPositiveButton("Valider", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            // Do something when click 'Valider'
                                 mPreferences.edit().putString(PREF_KEY_MESSAGE,edittext.getText().toString()).apply();
                         }
                     })
                     .setNegativeButton("Annuler", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            // Do something when click 'Annuler'
                         }
                     })
                     .create()
                     .show();
-        }else{
-            // If History button pressed
+        }else{  // If History button pressed
             Intent historyActivityIntent = new Intent(MainActivity.this, HistoryActivity.class);
             startActivity(historyActivityIntent);
         }
     }
 
-    private void findViews(){
-        mRelativeLayout = findViewById(R.id.activity_main_root);
-        mMoodImage = findViewById(R.id.activity_main_image_view);
-        mAddBtn = findViewById(R.id.activity_main_add_btn);
-        mHistBtn = findViewById(R.id.activity_main_history_btn);
-    }
-
+    //Each time we launch application check if we have already store a mood for today or if its a new day
     private void retrievePreferences(){
         mPreferences = getBaseContext().getSharedPreferences(PREFS, MODE_PRIVATE);
 
-        mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,3);
-        changeMood(mCurrentMood);
+        Gson gson = new Gson();
+        Type type = new TypeToken<ArrayList<Mood>>(){}.getType();
+        String jsonCurrent = mPreferences.getString("MoodCurrent","");
+        mMoodsCurrent = gson.fromJson(jsonCurrent,type);
+        if (mMoodsCurrent == null) {
+            mMoodsCurrent = new ArrayList<>();
+            mPreferences.edit().putInt(PREF_KEY_MOOD,3).apply();
+            mPreferences.edit().putString(PREF_KEY_MESSAGE,"").apply();
+            mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,3);
+            mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,"");
+            createAndSaveMood(mCurrentMood,mCurrentMessage, true);
+        }else{
+            int listSize = mMoodsCurrent.size();
+            for (int i = 0; i<listSize; i++){ // TO SHOW LIST IN LOG
+                Log.i("Index : " + i + " / " + listSize, mMoodsCurrent.get(i)+"");
+            }
+            mCurrentMood = mMoodsCurrent.get(0).getMood();
+            mCurrentMessage = mMoodsCurrent.get(0).getMessageMood();
+            if (mMoodsCurrent.get(0).getDateMood().equals(todayDate())){
+                mPreferences.edit().putInt(PREF_KEY_MOOD,mCurrentMood).apply();
+                mPreferences.edit().putString(PREF_KEY_MESSAGE,mCurrentMessage).apply();
+            }else{
+                manageMood(mCurrentMood,mCurrentMessage);
+                mPreferences.edit().putInt(PREF_KEY_MOOD,3).apply();
+                mPreferences.edit().putString(PREF_KEY_MESSAGE,"").apply();
+            }
+        }
+
+        changeMood(mPreferences.getInt(PREF_KEY_MOOD,3));
     }
 
+    //Assign a tag and a listener to each button to manage them easily
     private void configureButton(){
         mAddBtn.setOnClickListener(this);
         mHistBtn.setOnClickListener(this);
@@ -133,59 +151,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onPause(){
         super.onPause();
-        mPreferences.edit().putInt(PREF_KEY_MOOD, mCurrentMood).apply();
+        mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,3);
+        mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,"");
+        createAndSaveMood(mCurrentMood,mCurrentMessage, true);
+    }
 
+    // Manage the moods to remove the first index when a week is complete and save it
+    private void manageMood(int mCurrentMoodToSave, String mCurrentMessageToSave){
         Gson gson = new Gson();
-        String json = mPreferences.getString("Mood","");
         Type type = new TypeToken<ArrayList<Mood>>(){}.getType();
+
+        String json = mPreferences.getString("Mood","");
         mMoods = gson.fromJson(json,type);
         if (mMoods == null) {
             mMoods = new ArrayList<>();
-            createAndSaveMood(mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,""));
+            createAndSaveMood(mCurrentMoodToSave,mCurrentMessageToSave, false);
         }else{
             int listSize = mMoods.size();
-            for (int i = 0; i<listSize; i++){
-                //Log.i("Index : " + i + " / " + listSize, mMoods.get(i)+"");
-                if (mMoods.get(i).getDateMood().equals(todayDate())){
-                    //Log.i("Break", "Break de la boucle la date d'aujourdhui à été trouvée !");
-                    /*if (listSize > 6){ // FOR TESTING ONLY
-                        Toast.makeText(this, "Il y a 7 éléments !", Toast.LENGTH_SHORT).show();
-                        mMoods.remove(0);
-                        createAndSaveMood(mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,""));
-                    }else{
-                        createAndSaveMood(mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,""));
-                    }*/
-                    modifyAndSaveMood(i,mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,null));
-                    break;
-                }else if (i >= listSize - 1){
-                    //Log.i("NoBreak", "La date n'a pas été trouvée");
-                    if (listSize > 6){
-                        Toast.makeText(this, "Il y a 7 éléments !", Toast.LENGTH_SHORT).show();
-                        mMoods.remove(0);
-                    }
-                    createAndSaveMood(mCurrentMood,mPreferences.getString(PREF_KEY_MESSAGE,""));
-                }
-
+            if (listSize > 6){
+                mMoods.remove(0);
             }
+            createAndSaveMood(mCurrentMoodToSave,mCurrentMessageToSave,false);
         }
     }
 
-    private void createAndSaveMood(int moodToSave, String messageToSave){
+    //Manage mood's save if currentmood (today) clear list and save object or add it to the list and save object
+    private void createAndSaveMood(int moodToSave, String messageToSave, boolean currentMood){
         Gson gson = new Gson();
-            Mood mood = new Mood(moodToSave,todayDate(),messageToSave);
+        Mood mood = new Mood(moodToSave,todayDate(),messageToSave);
+        if (currentMood){
+            mMoodsCurrent.clear();
+            mMoodsCurrent.add(mood);
+            String jsonMood = gson.toJson(mMoodsCurrent);
+            mPreferences.edit().putString("MoodCurrent",jsonMood).apply();
+        }else{
             mMoods.add(mood);
             String jsonMood = gson.toJson(mMoods);
             mPreferences.edit().putString("Mood",jsonMood).apply();
+        }
     }
 
-    private void modifyAndSaveMood(int indexMood, int moodToSave, String messageToSave){
-        Gson gson = new Gson();
-        mMoods.get(indexMood).setMood(moodToSave);
-        mMoods.get(indexMood).setMessageMood(messageToSave);
-        String jsonMood = gson.toJson(mMoods);
-        mPreferences.edit().putString("Mood",jsonMood).apply();
-    }
-
+    //Return today's date
     private String todayDate(){
         DateFormat df = new SimpleDateFormat("yyyy.MM.dd");
         return df.format(Calendar.getInstance().getTime());
@@ -231,8 +237,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    //Change background color and smiley and store the currentmood value
     private void changeMood(int currentMood){
-        //Log.d("TAG", "MoodValue Entering method : " + mCurrentMood);
         if (currentMood < 0){
             currentMood = 0;
             mCurrentMood = currentMood;
@@ -241,7 +247,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             currentMood = 4;
             mCurrentMood = currentMood;
         }
-        //Log.d("TAG", "MoodValue After normalize : " + mCurrentMood);
         switch(currentMood){
 
             case 0 :
@@ -265,6 +270,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mMoodImage.setImageResource(R.drawable.smiley_super_happy);
                 break;
         }
+        mPreferences.edit().putInt(PREF_KEY_MOOD,mCurrentMood).apply();
     }
-
 }

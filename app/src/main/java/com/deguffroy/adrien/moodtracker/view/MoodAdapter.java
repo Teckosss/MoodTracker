@@ -1,15 +1,11 @@
 package com.deguffroy.adrien.moodtracker.view;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
 import android.support.v7.widget.RecyclerView;
-import android.util.DisplayMetrics;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import com.deguffroy.adrien.moodtracker.R;
@@ -47,14 +43,48 @@ public class MoodAdapter extends RecyclerView.Adapter<MoodViewHolder> {
         return new MoodViewHolder(view, mListener);
     }
 
+    private int getStatusBarHeight() {
+        int result = 0;
+        int resourceId = Resources.getSystem().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = Resources.getSystem().getDimensionPixelSize(resourceId);
+        }
+        return result;
+    }
+
     // UPDATE VIEW HOLDER WITH A MOOD
     @Override
     public void onBindViewHolder(MoodViewHolder viewHolder, int position) {
         viewHolder.updateWithMood(this.mMoods.get(position));
-        int height = Resources.getSystem().getDisplayMetrics().heightPixels / getItemCount();
+
+        int height = (Resources.getSystem().getDisplayMetrics().heightPixels - getStatusBarHeight()) / getItemCount();
+
         int width = Resources.getSystem().getDisplayMetrics().widthPixels;
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.height = height;
+        switch (position){
+            case 0:
+                viewHolder.mTextView.setText("Il y a une semaine");
+                break;
+            case 1:
+                viewHolder.mTextView.setText("Il y a six jours");
+                break;
+            case 2:
+                viewHolder.mTextView.setText("Il y a cinq jours");
+                break;
+            case 3:
+                viewHolder.mTextView.setText("Il y a quatre jours");
+                break;
+            case 4:
+                viewHolder.mTextView.setText("Il y a trois jours");
+                break;
+            case 5:
+                viewHolder.mTextView.setText("Avant-hier");
+                break;
+            case 6:
+                viewHolder.mTextView.setText("Hier");
+                break;
+        }
         switch (mMoods.get(position).getMood()){
             case 0:
                 params.width = width * 20 / 100;
@@ -78,12 +108,15 @@ public class MoodAdapter extends RecyclerView.Adapter<MoodViewHolder> {
                 break;
         }
         viewHolder.itemView.setLayoutParams(params);
-
     }
 
     // RETURN THE TOTAL COUNT OF ITEMS IN THE LIST
     @Override
     public int getItemCount() {
-        return this.mMoods.size();
+        if (mMoods == null){
+            return 0;
+        }else{
+            return this.mMoods.size();
+        }
     }
 }
