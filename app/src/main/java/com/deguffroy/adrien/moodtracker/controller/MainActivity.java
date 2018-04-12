@@ -3,6 +3,9 @@ package com.deguffroy.adrien.moodtracker.controller;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -13,7 +16,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import com.deguffroy.adrien.moodtracker.R;
 import com.deguffroy.adrien.moodtracker.model.Mood;
@@ -35,8 +37,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @BindView(R.id.activity_main_image_view) ImageView mMoodImage;
     @BindView(R.id.activity_main_add_btn) ImageView mAddBtn;
     @BindView(R.id.activity_main_history_btn) ImageView mHistBtn;
+    @BindView(R.id.activity_main_share_btn) ImageView mShareBtn;
 
     private int mCurrentMood = 3;
+    private int mImageMood;
     private String mCurrentMessage = "";
     private ArrayList<Mood> mMoods;
     private ArrayList<Mood> mMoodsCurrent;
@@ -49,13 +53,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private GestureDetector mDetector;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-
         this.retrievePreferences();
         this.configureButton();
         this.configureGesture();
@@ -65,41 +67,66 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         int button = (int) v.getTag();
-
         if (button == 0){  // If Add comment button pressed
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setMessage("Commentaire");
-            final EditText edittext = new EditText(this);
-            if (!(mPreferences.getString(PREF_KEY_MESSAGE,"").equals(""))){
-                edittext.setText(mPreferences.getString(PREF_KEY_MESSAGE,""));
-            }else{
-                edittext.setHint("Entrez votre commentaire");
-                edittext.requestFocus();
-            }
-            builder.setView(edittext)
-                    .setPositiveButton("Valider", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                                mPreferences.edit().putString(PREF_KEY_MESSAGE,edittext.getText().toString()).apply();
-                        }
-                    })
-                    .setNegativeButton("Annuler", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                        }
-                    })
-                    .create()
-                    .show();
-        }else{  // If History button pressed
+            showCommentDialog();
+        }else if (button == 1){  // If History button pressed
             Intent historyActivityIntent = new Intent(MainActivity.this, HistoryActivity.class);
             startActivity(historyActivityIntent);
+        }else{ // If Share button pressed
+            shareMood(mImageMood);
         }
+    }
+
+    private void showCommentDialog(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Commentaire");
+        final EditText edittext = new EditText(this);
+        if (!(mPreferences.getString(PREF_KEY_MESSAGE,"").equals(""))){
+            edittext.setText(mPreferences.getString(PREF_KEY_MESSAGE,""));
+        }else{
+            edittext.setHint("Entrez votre commentaire");
+            edittext.requestFocus();
+        }
+        builder.setView(edittext)
+                .setPositiveButton("Valider", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mPreferences.edit().putString(PREF_KEY_MESSAGE,edittext.getText().toString()).apply();
+                    }
+                })
+                .setNegativeButton("Annuler", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                })
+                .create()
+                .show();
+    }
+
+    private void shareMood(int imageMood){
+        Bitmap bitmap= BitmapFactory.decodeResource(getResources(),imageMood);
+        String path = getExternalCacheDir()+"/shareimage.jpg";
+        java.io.OutputStream out = null;
+        java.io.File file=new java.io.File(path);
+        try { out = new java.io.FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        path=file.getPath();
+        Uri bmpUri = Uri.parse("file://"+path);
+        Intent shareIntent = new Intent(android.content.Intent.ACTION_SEND);
+        shareIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        shareIntent.putExtra(Intent.EXTRA_STREAM, bmpUri);
+        shareIntent.setType("image/jpg");
+        startActivity(Intent.createChooser(shareIntent,"Partager avec "));
     }
 
     //Each time we launch application check if we have already store a mood for today or if its a new day
     private void retrievePreferences(){
         mPreferences = getBaseContext().getSharedPreferences(PREFS, MODE_PRIVATE);
-
         Gson gson = new Gson();
         Type type = new TypeToken<ArrayList<Mood>>(){}.getType();
         String jsonCurrent = mPreferences.getString("MoodCurrent","");
@@ -125,18 +152,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 manageMood(mCurrentMood,mCurrentMessage);
                 mPreferences.edit().putInt(PREF_KEY_MOOD,3).apply();
                 mPreferences.edit().putString(PREF_KEY_MESSAGE,"").apply();
+                mCurrentMood = 3;
             }
         }
-
-        changeMood(mPreferences.getInt(PREF_KEY_MOOD,3));
+        changeMood(mCurrentMood);
     }
 
     //Assign a tag and a listener to each button to manage them easily
     private void configureButton(){
         mAddBtn.setOnClickListener(this);
         mHistBtn.setOnClickListener(this);
+        mShareBtn.setOnClickListener(this);
         mAddBtn.setTag(0);
         mHistBtn.setTag(1);
+        mShareBtn.setTag(2);
     }
 
     private void configureGesture(){
@@ -208,7 +237,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // a return value of false means the detector didn't
             // recognize the event
             return mDetector.onTouchEvent(event);
-
         }
     };
 
@@ -224,12 +252,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         @Override
-        public boolean onFling(MotionEvent e1, MotionEvent e2,
-                               float velocityX, float velocityY) {
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
             if (e1.getY() < e2.getY()) {
                 changeMood(--mCurrentMood);
             }
-
             if (e1.getY() > e2.getY()) {
                 changeMood(++mCurrentMood);
             }
@@ -241,33 +267,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void changeMood(int currentMood){
         if (currentMood < 0){
             currentMood = 0;
-            mCurrentMood = currentMood;
-        }
-        else if (currentMood > 4){
+        } else if (currentMood > 4){
             currentMood = 4;
-            mCurrentMood = currentMood;
         }
+        mCurrentMood = currentMood;
         switch(currentMood){
-
             case 0 :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.faded_red));
                 mMoodImage.setImageResource(R.drawable.smiley_sad);
+                mImageMood = R.drawable.smiley_sad;
                 break;
             case 1 :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.warm_grey));
                 mMoodImage.setImageResource(R.drawable.smiley_disappointed);
+                mImageMood = R.drawable.smiley_disappointed;
                 break;
             case 2 :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.cornflower_blue_65));
                 mMoodImage.setImageResource(R.drawable.smiley_normal);
+                mImageMood = R.drawable.smiley_normal;
                 break;
             case 3 :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.light_sage));
                 mMoodImage.setImageResource(R.drawable.smiley_happy);
+                mImageMood = R.drawable.smiley_happy;
                 break;
             case 4 :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.banana_yellow));
                 mMoodImage.setImageResource(R.drawable.smiley_super_happy);
+                mImageMood = R.drawable.smiley_super_happy;
                 break;
         }
         mPreferences.edit().putInt(PREF_KEY_MOOD,mCurrentMood).apply();
