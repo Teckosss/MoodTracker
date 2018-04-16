@@ -9,7 +9,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.deguffroy.adrien.moodtracker.R;
-import com.deguffroy.adrien.moodtracker.controller.RecyclerViewClickListener;
 import com.deguffroy.adrien.moodtracker.model.Mood;
 
 import butterknife.BindView;
@@ -19,24 +18,15 @@ import butterknife.ButterKnife;
  * Created by Adrien Deguffroy on 07/04/2018.
  */
 
-public class MoodViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+public class MoodViewHolder extends RecyclerView.ViewHolder{
 
     @BindView(R.id.item_recycler_view_text) TextView mTextView;
     @BindView(R.id.item_recycler_view_image) ImageView mImageView;
     @BindView(R.id.item_recycler_layout) RelativeLayout mRelativeLayout;
 
-    private RecyclerViewClickListener mListener;
-
-    public MoodViewHolder(View itemView, RecyclerViewClickListener listener) {
+    public MoodViewHolder(View itemView) {
         super(itemView);
-        mListener = listener;
-        itemView.setOnClickListener(this);
         ButterKnife.bind(this, itemView);
-    }
-
-    @Override
-    public void onClick(View view){
-        mListener.onClick(view, getAdapterPosition());
     }
 
     private int getStatusBarHeight() {

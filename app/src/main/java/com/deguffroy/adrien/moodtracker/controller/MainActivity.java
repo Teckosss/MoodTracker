@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -19,6 +20,7 @@ import android.widget.RelativeLayout;
 
 import com.deguffroy.adrien.moodtracker.R;
 import com.deguffroy.adrien.moodtracker.model.Mood;
+import com.deguffroy.adrien.moodtracker.utils.ItemClickSupport;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.Gson;
 
@@ -108,7 +110,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String path = getExternalCacheDir()+"/shareimage.jpg";
         java.io.OutputStream out = null;
         java.io.File file=new java.io.File(path);
-        try { out = new java.io.FileOutputStream(file);
+        try {
+            out = new java.io.FileOutputStream(file);
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
             out.flush();
             out.close();
