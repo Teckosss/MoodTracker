@@ -9,7 +9,6 @@ import android.net.Uri;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -20,7 +19,6 @@ import android.widget.RelativeLayout;
 
 import com.deguffroy.adrien.moodtracker.R;
 import com.deguffroy.adrien.moodtracker.model.Mood;
-import com.deguffroy.adrien.moodtracker.utils.ItemClickSupport;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.Gson;
 
@@ -83,8 +81,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage("Commentaire");
         final EditText edittext = new EditText(this);
-        if (!(mPreferences.getString(PREF_KEY_MESSAGE,"").equals(""))){
-            edittext.setText(mPreferences.getString(PREF_KEY_MESSAGE,""));
+        if (!(mPreferences.getString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE).equals(""))){
+            edittext.setText(mPreferences.getString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE));
         }else{
             edittext.setHint("Entrez votre commentaire");
             edittext.requestFocus();
@@ -136,10 +134,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMoodsCurrent = gson.fromJson(jsonCurrent,type);
         if (mMoodsCurrent == null) {
             mMoodsCurrent = new ArrayList<>();
-            mPreferences.edit().putInt(PREF_KEY_MOOD,3).apply();
-            mPreferences.edit().putString(PREF_KEY_MESSAGE,"").apply();
-            mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,3);
-            mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,"");
+            mPreferences.edit().putInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY).apply();
+            mPreferences.edit().putString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE).apply();
+            mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY);
+            mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE);
             createAndSaveMood(mCurrentMood,mCurrentMessage, true);
         }else{
             int listSize = mMoodsCurrent.size();
@@ -153,9 +151,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mPreferences.edit().putString(PREF_KEY_MESSAGE,mCurrentMessage).apply();
             }else{
                 manageMood(mCurrentMood,mCurrentMessage);
-                mPreferences.edit().putInt(PREF_KEY_MOOD,3).apply();
-                mPreferences.edit().putString(PREF_KEY_MESSAGE,"").apply();
-                mCurrentMood = 3;
+                mPreferences.edit().putInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY).apply();
+                mPreferences.edit().putString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE).apply();
+                mCurrentMood = Mood.MOOD_HAPPY;
             }
         }
         changeMood(mCurrentMood);
@@ -183,8 +181,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onPause(){
         super.onPause();
-        mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,3);
-        mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,"");
+        mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY);
+        mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE);
         createAndSaveMood(mCurrentMood,mCurrentMessage, true);
     }
 
@@ -223,15 +221,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    //Return today's date
     private String todayDate(){
         DateFormat df = new SimpleDateFormat("yyyy.MM.dd");
         return df.format(Calendar.getInstance().getTime());
     }
 
-    // This touch listener passes everything on to the gesture detector.
-    // That saves us the trouble of interpreting the raw touch events
-    // ourselves.
+    // This touch listener passes everything on to the gesture detector. That saves us the trouble of interpreting the raw touch events ourselves.
     View.OnTouchListener touchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
@@ -243,14 +238,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     };
 
-    // In the SimpleOnGestureListener subclass you should override
-    // onDown and any other gesture that you want to detect.
+    // In the SimpleOnGestureListener subclass you should override onDown and any other gesture that you want to detect.
     class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
 
         @Override
-        public boolean onDown(MotionEvent event) {
-            // don't return false here or else none of the other
-            // gestures will work
+        public boolean onDown(MotionEvent event) { // MUST return true here or else none of the other gestures will work
             return true;
         }
 
@@ -275,27 +267,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         mCurrentMood = currentMood;
         switch(currentMood){
-            case 0 :
+            case Mood.MOOD_SAD :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.faded_red));
                 mMoodImage.setImageResource(R.drawable.smiley_sad);
                 mImageMood = R.drawable.smiley_sad;
                 break;
-            case 1 :
+            case Mood.MOOD_DISAPPOINTED :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.warm_grey));
                 mMoodImage.setImageResource(R.drawable.smiley_disappointed);
                 mImageMood = R.drawable.smiley_disappointed;
                 break;
-            case 2 :
+            case Mood.MOOD_NORMAL :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.cornflower_blue_65));
                 mMoodImage.setImageResource(R.drawable.smiley_normal);
                 mImageMood = R.drawable.smiley_normal;
                 break;
-            case 3 :
+            case Mood.MOOD_HAPPY :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.light_sage));
                 mMoodImage.setImageResource(R.drawable.smiley_happy);
                 mImageMood = R.drawable.smiley_happy;
                 break;
-            case 4 :
+            case Mood.MOOD_SUPER_HAPPY :
                 mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.banana_yellow));
                 mMoodImage.setImageResource(R.drawable.smiley_super_happy);
                 mImageMood = R.drawable.smiley_super_happy;

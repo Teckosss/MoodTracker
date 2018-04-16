@@ -7,6 +7,7 @@ import android.view.View;
  * Created by Adrien Deguffroy on 16/04/2018.
  */
 
+// This class manage item click on recyclerView and avoid memory leaks
 public class ItemClickSupport {
     private final RecyclerView mRecyclerView;
     private OnItemClickListener mOnItemClickListener;

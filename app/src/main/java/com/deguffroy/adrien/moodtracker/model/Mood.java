@@ -1,7 +1,5 @@
 package com.deguffroy.adrien.moodtracker.model;
 
-import java.util.Date;
-
 /**
  * Created by Adrien Deguffroy on 29/03/2018.
  */
@@ -10,6 +8,14 @@ public class Mood {
     private int mMood;
     private String mDateMood;
     private String mMessageMood;
+
+    public static final int MOOD_SAD = 0;
+    public static final int MOOD_DISAPPOINTED = 1;
+    public static final int MOOD_NORMAL = 2;
+    public static final int MOOD_HAPPY = 3;
+    public static final int MOOD_SUPER_HAPPY = 4;
+
+    public static final String NO_MOOD_MESSAGE = "";
 
     public Mood(int mood, String dateMood, String messageMood) {
         mMood = mood;

@@ -5,7 +5,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -45,7 +44,7 @@ public class HistoryActivity extends AppCompatActivity {
 
     // Retrieve SharedPreferences
     private void retrievePreferences(){
-        mPreferences = getBaseContext().getSharedPreferences(PREFS, MODE_PRIVATE);
+        mPreferences = this.getSharedPreferences(PREFS, MODE_PRIVATE);
     }
 
     // Display the moods history
