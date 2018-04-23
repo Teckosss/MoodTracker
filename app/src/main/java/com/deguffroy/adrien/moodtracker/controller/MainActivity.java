@@ -9,7 +9,6 @@ import android.net.Uri;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -32,7 +31,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -67,6 +65,136 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         this.retrievePreferences();
         this.configureButton();
         this.configureGesture();
+    }
+
+    //Each time we launch application check if we have already store a mood for today or if its a new day
+    private void retrievePreferences(){
+        mPreferences = getBaseContext().getSharedPreferences(PREFS, MODE_PRIVATE);
+        Gson gson = new Gson();
+        Type type = new TypeToken<ArrayList<Mood>>(){}.getType();
+        String jsonCurrent = mPreferences.getString("MoodCurrent","");
+        mMoodsCurrent = gson.fromJson(jsonCurrent,type);
+        if (mMoodsCurrent == null) { // Normally only use for the first launch
+            mMoodsCurrent = new ArrayList<>();
+            mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY);
+            mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE);
+            createAndSaveMood(mCurrentMood,mCurrentMessage, true);
+        }else{
+            mCurrentMood = mMoodsCurrent.get(0).getMood();
+            mCurrentMessage = mMoodsCurrent.get(0).getMessageMood();
+            if (mMoodsCurrent.get(0).getDateMood().equals(todayDate())){ // If we found today's date
+                mPreferences.edit().putInt(PREF_KEY_MOOD,mCurrentMood).apply();
+                mPreferences.edit().putString(PREF_KEY_MESSAGE,mCurrentMessage).apply();
+            }else{ // If there's a date but it's not today's date
+                String start = mMoodsCurrent.get(0).getDateMood();
+                String end = todayDate();
+                DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy.MM.dd");
+                DateTime dtStart = formatter.parseDateTime(start);
+                DateTime dtEnd = formatter.parseDateTime(end);
+                int days = Days.daysBetween(dtStart, dtEnd).getDays();
+                for (int i=0;i<days;i++){
+                    manageMood(mCurrentMood,mCurrentMessage);
+                    mPreferences.edit().putInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY).apply();
+                    mPreferences.edit().putString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE).apply();
+                    mCurrentMood = Mood.MOOD_HAPPY;
+                    mCurrentMessage = Mood.NO_MOOD_MESSAGE;
+                }
+            }
+        }
+        changeMood(mCurrentMood);
+    }
+
+    //Manage mood's save if currentmood (today) clear list and save object or add it to the list and save object
+    private void createAndSaveMood(int moodToSave, String messageToSave, boolean currentMood){
+        Gson gson = new Gson();
+        Mood mood = new Mood(moodToSave,todayDate(),messageToSave);
+        if (currentMood){
+            mMoodsCurrent.clear();
+            mMoodsCurrent.add(mood);
+            String jsonMood = gson.toJson(mMoodsCurrent);
+            mPreferences.edit().putString("MoodCurrent",jsonMood).apply();
+        }else{
+            mMoods.add(mood);
+            String jsonMood = gson.toJson(mMoods);
+            mPreferences.edit().putString("Mood",jsonMood).apply();
+        }
+    }
+
+    // Manage the moods to remove the first index when a week is complete and save it
+    private void manageMood(int mCurrentMoodToSave, String mCurrentMessageToSave){
+        Gson gson = new Gson();
+        Type type = new TypeToken<ArrayList<Mood>>(){}.getType();
+
+        String json = mPreferences.getString("Mood","");
+        mMoods = gson.fromJson(json,type);
+        if (mMoods == null) {
+            mMoods = new ArrayList<>();
+            createAndSaveMood(mCurrentMoodToSave,mCurrentMessageToSave, false);
+        }else{
+            int listSize = mMoods.size();
+            if (listSize > 6){
+                mMoods.remove(0);
+                createAndSaveMood(mCurrentMoodToSave,mCurrentMessageToSave,false);
+            }
+
+        }
+    }
+
+    //Change background color and smiley and store the currentmood value
+    private void changeMood(int currentMood){
+        if (currentMood < 0){
+            currentMood = 0;
+        } else if (currentMood > 4){
+            currentMood = 4;
+        }
+        mCurrentMood = currentMood;
+        switch(currentMood){
+            case Mood.MOOD_SAD :
+                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.faded_red));
+                mMoodImage.setImageResource(R.drawable.smiley_sad);
+                mImageMood = R.drawable.smiley_sad;
+                break;
+            case Mood.MOOD_DISAPPOINTED :
+                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.warm_grey));
+                mMoodImage.setImageResource(R.drawable.smiley_disappointed);
+                mImageMood = R.drawable.smiley_disappointed;
+                break;
+            case Mood.MOOD_NORMAL :
+                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.cornflower_blue_65));
+                mMoodImage.setImageResource(R.drawable.smiley_normal);
+                mImageMood = R.drawable.smiley_normal;
+                break;
+            case Mood.MOOD_HAPPY :
+                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.light_sage));
+                mMoodImage.setImageResource(R.drawable.smiley_happy);
+                mImageMood = R.drawable.smiley_happy;
+                break;
+            case Mood.MOOD_SUPER_HAPPY :
+                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.banana_yellow));
+                mMoodImage.setImageResource(R.drawable.smiley_super_happy);
+                mImageMood = R.drawable.smiley_super_happy;
+                break;
+        }
+        mPreferences.edit().putInt(PREF_KEY_MOOD,mCurrentMood).apply();
+    }
+
+    //Assign a tag and a listener to each button to manage them easily
+    private void configureButton(){
+        mAddBtn.setOnClickListener(this);
+        mHistBtn.setOnClickListener(this);
+        mShareBtn.setOnClickListener(this);
+        mAddBtn.setTag(0);
+        mHistBtn.setTag(1);
+        mShareBtn.setTag(2);
+    }
+
+    private void configureGesture(){
+        // get the gesture detector
+        mDetector = new GestureDetector(this, new MyGestureListener());
+
+        // Add a touch listener to the view
+        // The touch listener passes all its events on to the gesture detector
+        mRelativeLayout.setOnTouchListener(touchListener);
     }
 
     // Manage click and does the corresponding action according to the tag
@@ -131,112 +259,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startActivity(Intent.createChooser(shareIntent,"Partager avec "));
     }
 
-    //Each time we launch application check if we have already store a mood for today or if its a new day
-    private void retrievePreferences(){
-        mPreferences = getBaseContext().getSharedPreferences(PREFS, MODE_PRIVATE);
-        Gson gson = new Gson();
-        Type type = new TypeToken<ArrayList<Mood>>(){}.getType();
-        String jsonCurrent = mPreferences.getString("MoodCurrent","");
-        mMoodsCurrent = gson.fromJson(jsonCurrent,type);
-        if (mMoodsCurrent == null) {
-            mMoodsCurrent = new ArrayList<>();
-            mPreferences.edit().putInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY).apply();
-            mPreferences.edit().putString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE).apply();
-            mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY);
-            mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE);
-            createAndSaveMood(mCurrentMood,mCurrentMessage, true);
-        }else{
-            /*int listSize = mMoodsCurrent.size();
-            for (int i = 0; i<listSize; i++){ // TO SHOW LIST IN LOG
-                Log.i("Index : " + i + " / " + listSize, mMoodsCurrent.get(i)+"");
-            }*/
-            mCurrentMood = mMoodsCurrent.get(0).getMood();
-            mCurrentMessage = mMoodsCurrent.get(0).getMessageMood();
-            if (mMoodsCurrent.get(0).getDateMood().equals(todayDate())){
-                mPreferences.edit().putInt(PREF_KEY_MOOD,mCurrentMood).apply();
-                mPreferences.edit().putString(PREF_KEY_MESSAGE,mCurrentMessage).apply();
-            }else{
-                String start = mMoodsCurrent.get(0).getDateMood();
-                String end = todayDate();
-                DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy.MM.dd");
-                DateTime dtStart = formatter.parseDateTime(start);
-                Log.i("Jour de départ", dtStart+"");
-                DateTime dtEnd = formatter.parseDateTime(end);
-                Log.i("Jour de fin", dtEnd+"");
-                int days = Days.daysBetween(dtStart, dtEnd).getDays();
-                Log.i("Nombre de jour", days+"");
-                for (int i=0;i<days;i++){
-                    manageMood(mCurrentMood,mCurrentMessage);
-                    mPreferences.edit().putInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY).apply();
-                    mPreferences.edit().putString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE).apply();
-                    mCurrentMood = Mood.MOOD_HAPPY;
-                    mCurrentMessage = Mood.NO_MOOD_MESSAGE;
-                }
-            }
-        }
-        changeMood(mCurrentMood);
-    }
-
-    //Assign a tag and a listener to each button to manage them easily
-    private void configureButton(){
-        mAddBtn.setOnClickListener(this);
-        mHistBtn.setOnClickListener(this);
-        mShareBtn.setOnClickListener(this);
-        mAddBtn.setTag(0);
-        mHistBtn.setTag(1);
-        mShareBtn.setTag(2);
-    }
-
-    private void configureGesture(){
-        // get the gesture detector
-        mDetector = new GestureDetector(this, new MyGestureListener());
-
-        // Add a touch listener to the view
-        // The touch listener passes all its events on to the gesture detector
-        mRelativeLayout.setOnTouchListener(touchListener);
-    }
-
     @Override
     protected void onPause(){
         super.onPause();
         mCurrentMood = mPreferences.getInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY);
         mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE);
         createAndSaveMood(mCurrentMood,mCurrentMessage, true);
-    }
-
-    // Manage the moods to remove the first index when a week is complete and save it
-    private void manageMood(int mCurrentMoodToSave, String mCurrentMessageToSave){
-        Gson gson = new Gson();
-        Type type = new TypeToken<ArrayList<Mood>>(){}.getType();
-
-        String json = mPreferences.getString("Mood","");
-        mMoods = gson.fromJson(json,type);
-        if (mMoods == null) {
-            mMoods = new ArrayList<>();
-            createAndSaveMood(mCurrentMoodToSave,mCurrentMessageToSave, false);
-        }else{
-            int listSize = mMoods.size();
-            if (listSize > 6){
-                mMoods.remove(0);createAndSaveMood(mCurrentMoodToSave,mCurrentMessageToSave,false);
-            }
-
-        }
-    }
-
-    //Manage mood's save if currentmood (today) clear list and save object or add it to the list and save object
-    private void createAndSaveMood(int moodToSave, String messageToSave, boolean currentMood){
-        Gson gson = new Gson();
-        Mood mood = new Mood(moodToSave,todayDate(),messageToSave);
-        if (currentMood){
-            mMoodsCurrent.clear();
-            mMoodsCurrent.add(mood);
-            String jsonMood = gson.toJson(mMoodsCurrent);
-            mPreferences.edit().putString("MoodCurrent",jsonMood).apply();
-        }else{
-            mMoods.add(mood);
-            String jsonMood = gson.toJson(mMoods);
-            mPreferences.edit().putString("Mood",jsonMood).apply();
-        }
     }
 
     private String todayDate(){
@@ -274,43 +302,5 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             return true;
         }
-    }
-
-    //Change background color and smiley and store the currentmood value
-    private void changeMood(int currentMood){
-        if (currentMood < 0){
-            currentMood = 0;
-        } else if (currentMood > 4){
-            currentMood = 4;
-        }
-        mCurrentMood = currentMood;
-        switch(currentMood){
-            case Mood.MOOD_SAD :
-                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.faded_red));
-                mMoodImage.setImageResource(R.drawable.smiley_sad);
-                mImageMood = R.drawable.smiley_sad;
-                break;
-            case Mood.MOOD_DISAPPOINTED :
-                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.warm_grey));
-                mMoodImage.setImageResource(R.drawable.smiley_disappointed);
-                mImageMood = R.drawable.smiley_disappointed;
-                break;
-            case Mood.MOOD_NORMAL :
-                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.cornflower_blue_65));
-                mMoodImage.setImageResource(R.drawable.smiley_normal);
-                mImageMood = R.drawable.smiley_normal;
-                break;
-            case Mood.MOOD_HAPPY :
-                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.light_sage));
-                mMoodImage.setImageResource(R.drawable.smiley_happy);
-                mImageMood = R.drawable.smiley_happy;
-                break;
-            case Mood.MOOD_SUPER_HAPPY :
-                mRelativeLayout.setBackgroundColor(getResources().getColor(R.color.banana_yellow));
-                mMoodImage.setImageResource(R.drawable.smiley_super_happy);
-                mImageMood = R.drawable.smiley_super_happy;
-                break;
-        }
-        mPreferences.edit().putInt(PREF_KEY_MOOD,mCurrentMood).apply();
     }
 }
