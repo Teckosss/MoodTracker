@@ -22,11 +22,17 @@ import com.deguffroy.adrien.moodtracker.model.Mood;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.Gson;
 
+import org.joda.time.DateTime;
+import org.joda.time.Days;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -140,20 +146,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mCurrentMessage = mPreferences.getString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE);
             createAndSaveMood(mCurrentMood,mCurrentMessage, true);
         }else{
-            int listSize = mMoodsCurrent.size();
+            /*int listSize = mMoodsCurrent.size();
             for (int i = 0; i<listSize; i++){ // TO SHOW LIST IN LOG
                 Log.i("Index : " + i + " / " + listSize, mMoodsCurrent.get(i)+"");
-            }
+            }*/
             mCurrentMood = mMoodsCurrent.get(0).getMood();
             mCurrentMessage = mMoodsCurrent.get(0).getMessageMood();
             if (mMoodsCurrent.get(0).getDateMood().equals(todayDate())){
                 mPreferences.edit().putInt(PREF_KEY_MOOD,mCurrentMood).apply();
                 mPreferences.edit().putString(PREF_KEY_MESSAGE,mCurrentMessage).apply();
             }else{
-                manageMood(mCurrentMood,mCurrentMessage);
-                mPreferences.edit().putInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY).apply();
-                mPreferences.edit().putString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE).apply();
-                mCurrentMood = Mood.MOOD_HAPPY;
+                String start = mMoodsCurrent.get(0).getDateMood();
+                String end = todayDate();
+                DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy.MM.dd");
+                DateTime dtStart = formatter.parseDateTime(start);
+                Log.i("Jour de départ", dtStart+"");
+                DateTime dtEnd = formatter.parseDateTime(end);
+                Log.i("Jour de fin", dtEnd+"");
+                int days = Days.daysBetween(dtStart, dtEnd).getDays();
+                Log.i("Nombre de jour", days+"");
+                for (int i=0;i<days;i++){
+                    manageMood(mCurrentMood,mCurrentMessage);
+                    mPreferences.edit().putInt(PREF_KEY_MOOD,Mood.MOOD_HAPPY).apply();
+                    mPreferences.edit().putString(PREF_KEY_MESSAGE,Mood.NO_MOOD_MESSAGE).apply();
+                    mCurrentMood = Mood.MOOD_HAPPY;
+                    mCurrentMessage = Mood.NO_MOOD_MESSAGE;
+                }
             }
         }
         changeMood(mCurrentMood);
@@ -199,9 +217,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }else{
             int listSize = mMoods.size();
             if (listSize > 6){
-                mMoods.remove(0);
+                mMoods.remove(0);createAndSaveMood(mCurrentMoodToSave,mCurrentMessageToSave,false);
             }
-            createAndSaveMood(mCurrentMoodToSave,mCurrentMessageToSave,false);
+
         }
     }
 
